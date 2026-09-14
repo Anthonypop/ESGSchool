@@ -1,33 +1,33 @@
 import express from "express";
-import { createServer } from "http";
-import path from "path";
-import { fileURLToPath } from "url";
+import { createExpressMiddleware } from "@trpc/server/adapters/express";
+import { registerOAuthRoutes } from "../server/_core/oauth.js";
+import { registerStorageProxy } from "../server/_core/storageProxy.js";
+import { appRouter } from "../server/routers.js";
+import { createContext } from "../server/_core/context.js";
+import { serveStatic } from "../server/_core/vite.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const app = express();
 
-async function startServer() {
-  const app = express();
-  const server = createServer(app);
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-  // Serve static files from dist/public in production
-  const staticPath =
-    process.env.NODE_ENV === "production"
-      ? path.resolve(__dirname, "public")
-      : path.resolve(__dirname, "..", "dist", "public");
+registerStorageProxy(app);
+registerOAuthRoutes(app);
 
-  app.use(express.static(staticPath));
+app.use(
+  "/api/trpc",
+  createExpressMiddleware({
+    router: appRouter,
+    createContext,
+  })
+);
 
-  // Handle client-side routing - serve index.html for all routes
-  app.get("*", (_req, res) => {
-    res.sendFile(path.join(staticPath, "index.html"));
-  });
+// Serve static files in production
+serveStatic(app);
 
-  const port = process.env.PORT || 3000;
+// Fallthrough to index.html for SPA routing
+app.use("*", (_req, res) => {
+  res.sendFile("index.html", { root: "./dist/public" });
+});
 
-  server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
-  });
-}
-
-startServer().catch(console.error);
+export default app;
