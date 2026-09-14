@@ -6,9 +6,9 @@ import { Link } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 const chapters = [
-  { letter: "E", title: "環境", english: "Environment", description: "從能源、設施和資源消耗，建立校園碳排放的可追蹤基線。", href: "/environment", image: "/manus-storage/esg-environment_bed8f622.jpg", icon: Leaf, ink: "#173D35", pale: "#DDE9D9", index: "01" },
-  { letter: "S", title: "社會", english: "Social", description: "檢視教職員、學生、共融與社區之間的支持與參與。", href: "/social", image: "/manus-storage/esg-social_17eb7d26.jpg", icon: UsersRound, ink: "#9A3E35", pale: "#F2DDD7", index: "02" },
-  { letter: "G", title: "管治", english: "Governance", description: "記錄校董會、誠信、透明度與風險管理的校本制度。", href: "/governance", image: "/manus-storage/esg-governance_d684a5bd.jpg", icon: Scale, ink: "#273C73", pale: "#DEE3F1", index: "03" },
+  { letter: "E", title: "環境", english: "Environment", description: "從能源、設施和資源消耗，建立校園碳排放的可追蹤基線。", href: "/environment", image: "/esg-environment_bed8f622.jpg", icon: Leaf, ink: "#173D35", pale: "#DDE9D9", index: "01" },
+  { letter: "S", title: "社會", english: "Social", description: "檢視教職員、學生、共融與社區之間的支持與參與。", href: "/social", image: "/esg-social_17eb7d26.jpg", icon: UsersRound, ink: "#9A3E35", pale: "#F2DDD7", index: "02" },
+  { letter: "G", title: "管治", english: "Governance", description: "記錄校董會、誠信、透明度與風險管理的校本制度。", href: "/governance", image: "/esg-governance_d684a5bd.jpg", icon: Scale, ink: "#273C73", pale: "#DEE3F1", index: "03" },
 ];
 
 export default function Home() {
@@ -18,13 +18,13 @@ export default function Home() {
     <div className="min-h-screen overflow-x-hidden bg-[#F7F3EA] text-[#1D2823] selection:bg-[#DDE9D9]">
       <header className="border-b border-[#173D35]/15 bg-[#F7F3EA]">
         <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-5 px-4 py-4 sm:px-6 lg:px-10 lg:py-5">
-          <div className="flex min-w-0 items-center gap-3"><img src="/manus-storage/esg-school-index-mark_f4865f8f.png" alt="School ESG Index 標誌" className="h-12 w-12 shrink-0 object-contain" /><div><p className="font-serif text-lg font-bold tracking-[0.1em] text-[#173D35]">學校 ESG 指數</p><p className="mt-0.5 text-[10px] font-bold tracking-[0.16em] text-[#64736A]">SCHOOL ESG INDEX</p></div></div>
+          <div className="flex min-w-0 items-center gap-3"><img src="/esg-school-index-mark_f4865f8f.png" alt="School ESG Index 標誌" className="h-12 w-12 shrink-0 object-contain" /><div><p className="font-serif text-lg font-bold tracking-[0.1em] text-[#173D35]">學校 ESG 指數</p><p className="mt-0.5 text-[10px] font-bold tracking-[0.16em] text-[#64736A]">SCHOOL ESG INDEX</p></div></div>
           <div className="flex items-center gap-4"><p className="hidden border-l border-[#173D35]/15 pl-5 text-right text-xs leading-5 text-[#68756E] md:block">校園 ESG 自我檢視工具<br />環境 · 社會 · 管治</p>{!loading && <Link href="/portal" className={user ? "border border-[#173D35] px-3 py-2 text-xs font-bold text-[#173D35] transition hover:bg-[#173D35] hover:text-white" : "bg-[#173D35] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#0F2D26]"}>{user ? "學校帳戶中心" : "登入／建立帳戶"}</Link>}</div>
         </div>
       </header>
       <main className="mx-auto max-w-[1440px] px-4 pb-16 sm:px-6 lg:px-10">
         <section className="relative mt-5 overflow-hidden bg-[#173D35] px-6 py-10 text-white shadow-[0_20px_45px_rgba(23,61,53,.14)] sm:mt-8 sm:px-9 sm:py-14 lg:grid lg:min-h-[410px] lg:grid-cols-[.92fr_1.08fr] lg:items-end lg:px-12 lg:py-16">
-          <img src="/manus-storage/esg-index-editorial-hero_f2d55280.jpg" alt="" className="absolute inset-0 h-full w-full object-cover opacity-70" />
+          <img src="/esg-index-editorial-hero_f2d55280.jpg" alt="" className="absolute inset-0 h-full w-full object-cover opacity-70" />
           <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(23,61,53,.97)_0%,rgba(23,61,53,.88)_48%,rgba(23,61,53,.18)_100%)]" />
           <div className="relative max-w-2xl"><p className="flex items-center gap-2 text-xs font-bold tracking-[0.17em] text-[#D9E4B9]"><BookOpenText className="h-4 w-4" /> CAMPUS RESPONSIBILITY REGISTER</p><h1 className="mt-5 font-serif text-4xl font-bold leading-[1.18] tracking-[0.025em] sm:text-5xl lg:text-6xl">把校園的長期承諾，<br />整理成可檢視的指標。</h1><p className="mt-6 max-w-xl text-sm leading-7 text-white/80 sm:text-base">香港學校雖未有強制 ESG 披露要求，仍可從一致的資料基線開始，理解本校的環境、社會和管治表現。</p></div>
           <div className="relative mt-8 flex items-end justify-between border-t border-white/20 pt-4 text-xs text-white/70 lg:mt-0 lg:justify-end lg:border-0 lg:pt-0"><span className="lg:hidden">請選擇一個 ESG 範疇開始。</span><span className="font-serif text-6xl font-bold text-white/20 sm:text-8xl">2026</span></div>

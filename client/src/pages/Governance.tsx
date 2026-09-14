@@ -38,7 +38,7 @@ export default function Governance() {
   const scores = useMemo(() => calculate(input), [input]);
   const set = <K extends keyof GovernanceInput>(key: K, next: GovernanceInput[K]) => setInput((current) => ({ ...current, [key]: next }));
   return (
-    <EsgLayout chapter="governance" eyebrow="校務管治" title="校務管治指數" description="以架構、誠信、資訊透明與風險管理為軸，整理學校的決策與問責制度，建立可回顧的治理紀錄。" image="/manus-storage/esg-governance_d684a5bd.jpg">
+    <EsgLayout chapter="governance" eyebrow="校務管治" title="校務管治指數" description="以架構、誠信、資訊透明與風險管理為軸，整理學校的決策與問責制度，建立可回顧的治理紀錄。" image="/esg-governance_d684a5bd.jpg">
       <div className="my-6 border-y border-[#173D35]/10 py-4" data-calculated-score={Math.round(scores.total)}><p className="text-xs font-bold tracking-[0.14em] text-[#273C73]">管治總覽</p><p className="mt-1 text-sm text-[#68756E]">請按校務文件、會議紀錄、相關政策及年度紀錄填寫；勾選項目亦請補充具體實行做法。</p></div>
       <div className="space-y-6">
         <SectionCard code="一 · 校董會" title="校董會架構與治理" description="檢視校董會席位是否完整、專業背景是否多元，以及校董能否持續接受管治培訓。" tone="blue"><div className="grid gap-4 lg:grid-cols-3"><NumberField label="目前空缺席位數量" helper="請檢視六類校董席位是否齊全：辦學團體、校長、教師、家長、校友及獨立校董；填寫尚未填補的席位數量。" value={input.missing} onChange={(v) => set("missing", v)} max={6} suffix="席" /><SelectField label="校董專業背景多元性" helper="按已涵蓋的專業領域類別選擇，例如法律、財務／會計、教育、醫療或社工。" value={input.diversity} onChange={(v) => set("diversity", v)} options={[{ value: "30", label: "涵蓋三種或以上專業類別" }, { value: "20", label: "涵蓋兩種專業類別" }, { value: "10", label: "涵蓋一種或無特別背景" }]} /><NumberField label="校董平均培訓時數" helper="填寫每名校董於本學年參與管治、教育法規、財務或風險管理培訓的平均時數。" value={input.boardTraining} onChange={(v) => set("boardTraining", v)} suffix="小時" /></div></SectionCard>
