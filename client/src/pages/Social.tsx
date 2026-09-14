@@ -1,0 +1,93 @@
+/**
+ * Design system reminder — 社會章節使用磚紅標記、年報紙張材質與可檢視的欄位群組，展現關懷但不失紀律。
+ */
+import { useMemo, useState } from "react";
+import { ChevronRight } from "lucide-react";
+import { useLocation } from "wouter";
+import { CheckField, FieldSet, NumberField, SectionCard, SelectField, TextAreaField } from "@/components/FormPrimitives";
+import { EsgLayout } from "@/components/EsgLayout";
+import { useSchoolProfile } from "@/contexts/SchoolProfileContext";
+import { SubmissionActions } from "@/components/SubmissionActions";
+
+type SocialInput = {
+  teacherTurnover: number; trainingHours: number; fatal: string; injuryIncidents: number; lostWorkDays: number; fullTimeEmployees: number; balanceMeasures: string;
+  supportRatio: string; preventionMeasures: string;
+  antiPolicy: boolean; antiPolicyDetail: string; antiChannel: boolean; antiChannelDetail: string; antiEducation: boolean; antiEducationDetail: string; antiProcedure: boolean; antiProcedureDetail: string;
+  drills: number; safetyInspection: boolean; safetyInspectionDetail: string; accessControl: boolean; accessControlDetail: string; safetyAccident: string;
+  exerciseMinutes: number; lunchGuideline: boolean; lunchGuidelineDetail: string; snackGuideline: boolean; snackGuidelineDetail: string;
+  senTotal: number; senSupported: number; teacherTotal: number; teacherTrained: number;
+  multiInfo: boolean; multiInfoDetail: string; adjustments: boolean; adjustmentsDetail: string; inclusionMaterial: boolean; inclusionMaterialDetail: string; ethnicGroup: boolean; ethnicGroupDetail: string; accessibleParent: boolean; accessibleParentDetail: string; inclusionHours: number; inclusionActivities: string;
+  aidNeed: number; aidFunded: number; deviceNeed: number; deviceFunded: number; students: number; serviceHours: number;
+};
+
+const emptyNumber = Number.NaN;
+const initial: SocialInput = {
+  teacherTurnover: emptyNumber, trainingHours: emptyNumber, fatal: "", injuryIncidents: emptyNumber, lostWorkDays: emptyNumber, fullTimeEmployees: emptyNumber, balanceMeasures: "",
+  supportRatio: "", preventionMeasures: "",
+  antiPolicy: false, antiPolicyDetail: "", antiChannel: false, antiChannelDetail: "", antiEducation: false, antiEducationDetail: "", antiProcedure: false, antiProcedureDetail: "",
+  drills: emptyNumber, safetyInspection: false, safetyInspectionDetail: "", accessControl: false, accessControlDetail: "", safetyAccident: "",
+  exerciseMinutes: emptyNumber, lunchGuideline: false, lunchGuidelineDetail: "", snackGuideline: false, snackGuidelineDetail: "",
+  senTotal: emptyNumber, senSupported: emptyNumber, teacherTotal: emptyNumber, teacherTrained: emptyNumber,
+  multiInfo: false, multiInfoDetail: "", adjustments: false, adjustmentsDetail: "", inclusionMaterial: false, inclusionMaterialDetail: "", ethnicGroup: false, ethnicGroupDetail: "", accessibleParent: false, accessibleParentDetail: "", inclusionHours: emptyNumber, inclusionActivities: "",
+  aidNeed: emptyNumber, aidFunded: emptyNumber, deviceNeed: emptyNumber, deviceFunded: emptyNumber, students: emptyNumber, serviceHours: emptyNumber,
+};
+
+const numeric = (value: number) => Number.isFinite(value) ? value : 0;
+const clamp = (value: number) => Math.max(0, Math.min(100, value));
+const ratioDenominator = (value: string) => Number(value.split(":").pop()) || 0;
+
+function calculate(value: SocialInput, staffCount: number, studentCount: number) {
+  const v = {
+    teacherTurnover: numeric(value.teacherTurnover), trainingHours: numeric(value.trainingHours), injuryIncidents: numeric(value.injuryIncidents), lostWorkDays: numeric(value.lostWorkDays), fullTimeEmployees: numeric(value.fullTimeEmployees), drills: numeric(value.drills), exerciseMinutes: numeric(value.exerciseMinutes), senTotal: numeric(value.senTotal), senSupported: numeric(value.senSupported), teacherTotal: numeric(value.teacherTotal), teacherTrained: numeric(value.teacherTrained), inclusionHours: numeric(value.inclusionHours), aidNeed: numeric(value.aidNeed), aidFunded: numeric(value.aidFunded), deviceNeed: numeric(value.deviceNeed), deviceFunded: numeric(value.deviceFunded), students: numeric(value.students), serviceHours: numeric(value.serviceHours), safetyAccident: Number(value.safetyAccident) || 0,
+  };
+  const employeeBase = Math.max(1, Number.isFinite(staffCount) ? staffCount : 0);
+  const injuryRate = v.injuryIncidents / employeeBase * 100;
+  const lostDayRate = v.lostWorkDays / employeeBase;
+  const s11 = v.teacherTurnover <= 5 ? 100 : v.teacherTurnover <= 8 ? 100 - (v.teacherTurnover - 5) * 5 : v.teacherTurnover <= 12 ? 85 - (v.teacherTurnover - 8) * 6.25 : v.teacherTurnover <= 20 ? 60 - (v.teacherTurnover - 12) * 5 : 0;
+  const s12 = v.trainingHours >= 65 ? 100 : v.trainingHours >= 50 ? 80 + ((v.trainingHours - 50) / 15) * 20 : Math.max(0, v.trainingHours / 50 * 80);
+  const s13 = value.fatal === "true" ? 0 : Math.max(0, 100 - injuryRate * 15 - lostDayRate * 2);
+  const s1 = clamp((s11 + s12 + s13) / 3);
+  const ratio = ratioDenominator(value.supportRatio);
+  const supportScore = ratio > 0 && ratio <= 400 ? 50 : ratio > 0 && ratio <= 800 ? 50 * 400 / ratio : 10;
+  const s22 = (value.antiPolicy ? 20 : 0) + (value.antiChannel ? 20 : 0) + (value.antiEducation ? 30 : 0) + (value.antiProcedure ? 30 : 0);
+  const s23 = (v.drills >= 2 ? 40 : v.drills === 1 ? 20 : 0) + (value.safetyInspection ? 15 : 0) + (value.accessControl ? 15 : 0) + v.safetyAccident;
+  const s24 = (v.exerciseMinutes >= 150 ? 50 : v.exerciseMinutes / 150 * 50) + (value.lunchGuideline ? 25 : 0) + (value.snackGuideline ? 25 : 0);
+  const s2 = clamp((supportScore + s22 + s23 + s24) / 4);
+  const s31a = v.senTotal === 0 ? 0 : Math.min(50, v.senSupported / v.senTotal * 50);
+  const s31b = v.teacherTotal === 0 ? 0 : Math.min(50, v.teacherTrained / v.teacherTotal * 50);
+  const s32 = [value.multiInfo, value.adjustments, value.inclusionMaterial, value.ethnicGroup, value.accessibleParent].filter(Boolean).length * 10 + Math.min(50, v.inclusionHours * 5);
+  const s33a = v.aidNeed === 0 ? 0 : Math.min(50, v.aidFunded / v.aidNeed * 50);
+  const s33b = v.deviceNeed === 0 ? 0 : Math.min(50, v.deviceFunded / v.deviceNeed * 50);
+  const s3 = clamp((s31a + s31b + s32 + s33a + s33b) / 3);
+  const s4 = clamp(v.serviceHours / Math.max(1, Number.isFinite(studentCount) ? studentCount : 0) / 15 * 100);
+  return { injuryRate, lostDayRate, total: (s1 + s2 + s3 + s4) / 4 };
+}
+
+function CalculatedValue({ label, value, detail }: { label: string; value: string; detail: string }) {
+  return <div className="border border-[#9A3E35]/20 bg-[#FDF8F6] p-3.5"><p className="text-sm font-bold text-[#512D28]">{label}</p><p className="mt-2 font-serif text-2xl font-bold text-[#9A3E35]">{value}</p><p className="mt-1 text-[11px] leading-4 text-[#8A6E68]">{detail}</p></div>;
+}
+
+function DescribedCheck({ label, detail, checked, onCheckedChange, descriptionLabel, description, onDescriptionChange, placeholder }: { label: string; detail: string; checked: boolean; onCheckedChange: (next: boolean) => void; descriptionLabel: string; description: string; onDescriptionChange: (next: string) => void; placeholder: string }) {
+  return <div><CheckField label={label} detail={detail} checked={checked} onChange={onCheckedChange} />{checked && <div className="mt-2 pl-3"><TextAreaField label={descriptionLabel} placeholder={placeholder} rows={2} value={description} onChange={onDescriptionChange} /></div>}</div>;
+}
+
+export default function Social() {
+  const [input, setInput] = useState(initial);
+  const { profile } = useSchoolProfile();
+  const [, setLocation] = useLocation();
+  const result = useMemo(() => calculate(input, profile.staffCount, profile.studentCount), [input, profile.staffCount, profile.studentCount]);
+  const set = <K extends keyof SocialInput>(key: K, next: SocialInput[K]) => setInput((current) => ({ ...current, [key]: next }));
+  return (
+    <EsgLayout chapter="social" eyebrow="社會責任" title="社會責任指數" description="整理教職員、學生、共融與社區連結資料，將校園裡的關懷實踐轉化為可檢視、可延續的衡量基礎。" image="/manus-storage/esg-social_17eb7d26.jpg">
+      <div className="my-6 border-y border-[#173D35]/10 py-4" data-calculated-score={Math.round(result.total)}><p className="text-xs font-bold tracking-[0.14em] text-[#9A3E35]">社會總覽</p><p className="mt-1 text-sm text-[#68756E]">請按可核實的年度紀錄填寫；措施類項目會保留作後續人手評核。</p></div>
+      <div className="space-y-6">
+        <SectionCard code="一 · 教職員" title="教職員權益與發展" description="以留任、專業發展、職業安全及措施紀錄，檢視人員支援質素。" tone="red"><div className="grid gap-4 lg:grid-cols-2"><NumberField label="教師流失率" helper="填寫本學年教師離職人數佔教師總數的百分比。" value={input.teacherTurnover} onChange={(v) => set("teacherTurnover", v)} suffix="%" /><NumberField label="教師平均專業進修時數" helper="填寫每名教師於本學年完成的平均專業進修時數。" value={input.trainingHours} onChange={(v) => set("trainingHours", v)} suffix="小時" /><div className="lg:col-span-2"><FieldSet title="職業安全" description="請按年度職安紀錄填寫。系統會以事故或損失日數除以共用基本資料的全職教職員人數，自動計算比率。"><div className="grid gap-3"><SelectField label="是否有致命事故" helper="如本學年曾發生因工導致的致命事故，請選擇「是」。" value={input.fatal} onChange={(v) => set("fatal", v)} options={[{ value: "", label: "請選擇" }, { value: "false", label: "否" }, { value: "true", label: "是" }]} /><div className="grid gap-3 border-t border-[#9A3E35]/15 pt-3"><NumberField label="年度工傷申報事故次數" helper="填寫本學年已申報的工傷事故總次數。" value={input.injuryIncidents} onChange={(v) => set("injuryIncidents", v)} suffix="宗" /><CalculatedValue label="工傷率" value={`${result.injuryRate.toFixed(2)}%`} detail="年度工傷申報事故次數 ÷ 全職教職員人數 × 100%" /></div><div className="grid gap-3 border-t border-[#9A3E35]/15 pt-3"><NumberField label="年度因工傷損失的總工作天數" helper="填寫所有工傷個案於本學年合計損失的工作天數。" value={input.lostWorkDays} onChange={(v) => set("lostWorkDays", v)} suffix="天" /><CalculatedValue label="工傷損失日數率" value={result.lostDayRate.toFixed(2)} detail="年度因工傷損失的總工作天數 ÷ 全職教職員人數" /></div></div></FieldSet></div><TextAreaField label="工作與生活平衡措施" helper="本項由後續人手評價再作評分。請具體描述本學年為教職員提供的支援措施。" placeholder="例如：設立彈性工作安排、提供心理支援服務、安排非教學日及檢視會議時數。" value={input.balanceMeasures} onChange={(v) => set("balanceMeasures", v)} /></div></SectionCard>
+        <SectionCard code="二 · 學生" title="學生福祉與身心健康" description="把專業支援、反霸凌、安全及健康生活習慣納入同一個校園福祉視角。" tone="red"><div className="grid gap-5 xl:grid-cols-2"><FieldSet title="心理健康支援" description="請記錄學生可獲得的專業支援及校本預防安排。"><div className="grid gap-3"><TextAreaField label="專業人手配置比率" helper="填寫駐校社工、教育心理學家或輔導人員與學生的比例。" placeholder="例如：1:400" rows={2} value={input.supportRatio} onChange={(v) => set("supportRatio", v)} /><TextAreaField label="預防機制與宣導" helper="本項由後續人手評價再作評分。請描述學校提供的預防、教育及求助安排。" placeholder="例如：安排情緒教育課、心理健康週、家長講座及求助渠道宣傳。" value={input.preventionMeasures} onChange={(v) => set("preventionMeasures", v)} /></div></FieldSet><FieldSet title="反霸凌機制" description="勾選已實行的安排，並在下方說明本學年具體做法及可核實的紀錄。"><div className="grid gap-3"><DescribedCheck label="設有「零容忍」校本反霸凌政策" detail="涵蓋預防、處理原則及學生支援。" checked={input.antiPolicy} onCheckedChange={(v) => set("antiPolicy", v)} descriptionLabel="政策實施說明" description={input.antiPolicyDetail} onDescriptionChange={(v) => set("antiPolicyDetail", v)} placeholder="例如：已載入學生手冊，並於班主任課及家長會說明處理原則。" /><DescribedCheck label="設有保護舉報人的機密申訴渠道" detail="讓學生或家長可以安全提出關注。" checked={input.antiChannel} onCheckedChange={(v) => set("antiChannel", v)} descriptionLabel="渠道實施說明" description={input.antiChannelDetail} onDescriptionChange={(v) => set("antiChannelDetail", v)} placeholder="例如：設立保密電郵、網上表格及由指定人員跟進。" /><DescribedCheck label="安排反霸凌主題教育活動或課程" detail="包括班主任課、講座、工作坊或校本教材。" checked={input.antiEducation} onCheckedChange={(v) => set("antiEducation", v)} descriptionLabel="教育活動說明" description={input.antiEducationDetail} onDescriptionChange={(v) => set("antiEducationDetail", v)} placeholder="例如：於中一至中三級進行同理心工作坊及網絡欺凌專題課。" /><DescribedCheck label="設有標準化調查與處理程序" detail="清楚訂明接報、調查、家長溝通及跟進安排。" checked={input.antiProcedure} onCheckedChange={(v) => set("antiProcedure", v)} descriptionLabel="處理程序說明" description={input.antiProcedureDetail} onDescriptionChange={(v) => set("antiProcedureDetail", v)} placeholder="例如：由學生支援小組於指定時限內完成初步評估並記錄跟進。" /></div></FieldSet><FieldSet title="校園安全" description="請填報年度演練、設施檢查及重大安全事故紀錄。"><div className="grid gap-3 sm:grid-cols-3"><NumberField label="安全演練次數" helper="每學年定期進行跨類別應變演練，例如火警、防暴／入侵警報、地震等。" value={input.drills} onChange={(v) => set("drills", v)} suffix="次" /><SelectField label="安全事故紀錄" helper="按本學年最嚴重的校園安全事故情況選擇。" value={input.safetyAccident} onChange={(v) => set("safetyAccident", v)} options={[{ value: "", label: "請選擇" }, { value: "30", label: "無重大人身傷害事故" }, { value: "20", label: "輕微事故並已檢討" }, { value: "0", label: "重大責任疏失" }]} /><div className="grid content-start gap-3"><DescribedCheck label="完成設施合格檢測" detail="包括消防、機電、遊樂或實驗室相關安全檢查。" checked={input.safetyInspection} onCheckedChange={(v) => set("safetyInspection", v)} descriptionLabel="設施檢測說明" description={input.safetyInspectionDetail} onDescriptionChange={(v) => set("safetyInspectionDetail", v)} placeholder="例如：已完成消防年檢、遊樂設施檢查及實驗室安全檢測。" /><DescribedCheck label="設有門禁與監控安排" detail="包括訪客登記、出入口管理或閉路電視等措施。" checked={input.accessControl} onCheckedChange={(v) => set("accessControl", v)} descriptionLabel="門禁與監控說明" description={input.accessControlDetail} onDescriptionChange={(v) => set("accessControlDetail", v)} placeholder="例如：訪客須登記及佩戴訪客證，主要出入口設有閉路電視。" /></div></div></FieldSet><FieldSet title="體能與健康" description="請按學校恆常推行的運動及健康飲食安排填寫。"><div className="grid gap-3 sm:grid-cols-2"><NumberField label="每週運動分鐘數" helper="填寫一般學生每週於體育課、課外活動或校本運動計劃的平均活動時間。" value={input.exerciseMinutes} onChange={(v) => set("exerciseMinutes", v)} suffix="分鐘" /><div className="grid content-start gap-3"><DescribedCheck label="午膳符合「3低1高」或相關認證" detail="指低脂、低鹽、低糖及高纖維的健康膳食安排。" checked={input.lunchGuideline} onCheckedChange={(v) => set("lunchGuideline", v)} descriptionLabel="午膳安排說明" description={input.lunchGuidelineDetail} onDescriptionChange={(v) => set("lunchGuidelineDetail", v)} placeholder="例如：供應商每月提交餐單，並由營養師覆核「3低1高」要求。" /><DescribedCheck label="小食部設有健康飲食指引" detail="例如限制高糖飲品、標示營養資訊或提供健康選項。" checked={input.snackGuideline} onCheckedChange={(v) => set("snackGuideline", v)} descriptionLabel="小食部指引說明" description={input.snackGuidelineDetail} onDescriptionChange={(v) => set("snackGuidelineDetail", v)} placeholder="例如：停售高糖汽水，提供低糖飲品及標示健康選擇。" /></div></div></FieldSet></div></SectionCard>
+        <SectionCard code="三 · 共融" title="教育公平與多元包容" description="在學生支援、文化共融與資源可及性之間，辨識每一位學生的參與機會。" tone="red"><div className="grid gap-5 xl:grid-cols-2"><FieldSet title="學生支援與教師融合教育培訓" description="填寫有需要學生的支援覆蓋，以及教師完成融合教育培訓的情況。"><div className="grid gap-3 sm:grid-cols-2"><NumberField label="需層級支援學生總人數" helper="按校內已識別需要額外支援的學生人數填寫。" value={input.senTotal} onChange={(v) => set("senTotal", v)} suffix="人" /><NumberField label="已獲個別輔導學生人數" helper="填寫本學年已接受個別支援或輔導的學生人數。" value={input.senSupported} onChange={(v) => set("senSupported", v)} suffix="人" /><NumberField label="全校教師總數" helper="填寫本學年任教的教師總人數。" value={input.teacherTotal} onChange={(v) => set("teacherTotal", v)} suffix="人" /><NumberField label="已完成融合教育培訓教師數" helper="填寫已完成學校認可融合教育培訓的教師人數。" value={input.teacherTrained} onChange={(v) => set("teacherTrained", v)} suffix="人" /></div></FieldSet><FieldSet title="多元文化與多元包容" description="勾選已推行的措施，並於描述欄記錄具體做法及佐證。"><div className="grid gap-3"><DescribedCheck label="提供雙語或多語言資訊" detail="例如通告、家長資訊或申請表提供多種語言版本。" checked={input.multiInfo} onCheckedChange={(v) => set("multiInfo", v)} descriptionLabel="資訊安排說明" description={input.multiInfoDetail} onDescriptionChange={(v) => set("multiInfoDetail", v)} placeholder="例如：新生資訊及家長通告提供中、英文及少數族裔語言版本。" /><DescribedCheck label="設有學習差異或文化調適機制" detail="例如調整課業、評估安排或提供語言支援。" checked={input.adjustments} onCheckedChange={(v) => set("adjustments", v)} descriptionLabel="調適措施說明" description={input.adjustmentsDetail} onDescriptionChange={(v) => set("adjustmentsDetail", v)} placeholder="例如：為非華語學生安排中文支援小組及調整評估安排。" /><DescribedCheck label="設有跨文化或共融校本教材" detail="教材能反映多元文化、能力差異及互相尊重。" checked={input.inclusionMaterial} onCheckedChange={(v) => set("inclusionMaterial", v)} descriptionLabel="教材安排說明" description={input.inclusionMaterialDetail} onDescriptionChange={(v) => set("inclusionMaterialDetail", v)} placeholder="例如：在生命教育單元加入多元家庭及文化尊重教材。" /><DescribedCheck label="設有少數族裔或文化支援小組" detail="由指定教職員統籌學生及家長的需要。" checked={input.ethnicGroup} onCheckedChange={(v) => set("ethnicGroup", v)} descriptionLabel="支援小組說明" description={input.ethnicGroupDetail} onDescriptionChange={(v) => set("ethnicGroupDetail", v)} placeholder="例如：由輔導主任、中文科教師及家長義工組成支援小組。" /><DescribedCheck label="提供聽障或無障礙家長支援" detail="例如提供口述影像、手語傳譯或無障礙溝通安排。" checked={input.accessibleParent} onCheckedChange={(v) => set("accessibleParent", v)} descriptionLabel="無障礙支援說明" description={input.accessibleParentDetail} onDescriptionChange={(v) => set("accessibleParentDetail", v)} placeholder="例如：家長會按需要提供手語傳譯及無障礙文件。" /><NumberField label="共融活動累積時數" helper="填寫本學年面向學生、家長或教職員的共融活動總時數。" value={input.inclusionHours} onChange={(v) => set("inclusionHours", v)} suffix="小時" /><TextAreaField label="共融活動內容" helper="請具體列出本學年曾舉辦的共融活動。" placeholder="例如：共融運動日、少數族裔文化分享週、特殊學習需要同理心工作坊。" value={input.inclusionActivities} onChange={(v) => set("inclusionActivities", v)} /></div></FieldSet><FieldSet title="活動資助覆蓋率" description="了解有經濟需要學生能否參與校內外學習及活動。"><div className="grid gap-3 sm:grid-cols-2"><NumberField label="有需要的弱勢學生總人次" helper="填寫已識別有經濟或資源支援需要的學生參與人次。" value={input.aidNeed} onChange={(v) => set("aidNeed", v)} suffix="人次" /><NumberField label="實際獲資助參與人次" helper="填寫已獲學校、政府或外界資助參與活動的人次。" value={input.aidFunded} onChange={(v) => set("aidFunded", v)} suffix="人次" /></div></FieldSet><FieldSet title="數位設備與網絡資助率" description="記錄學校如何支援因設備或網絡不足而影響學習的學生。"><div className="grid gap-3 sm:grid-cols-2"><NumberField label="缺乏設備的清貧學生數" helper="填寫經學校識別，缺乏合適學習裝置或網絡的學生人數。" value={input.deviceNeed} onChange={(v) => set("deviceNeed", v)} suffix="人" /><NumberField label="獲網絡資助學生數" helper="填寫已獲借用裝置、數據卡、網絡費或其他支援的學生人數。" value={input.deviceFunded} onChange={(v) => set("deviceFunded", v)} suffix="人" /></div></FieldSet></div></SectionCard>
+        <SectionCard code="四 · 社區" title="社區連結與社會影響力" description="以學生服務學習與義工投入，呈現校園與社區之間的實際連結。" tone="red"><div className="grid gap-4"><NumberField label="學生總社區服務時數" helper="填寫學生於本學年參與校內外義工、服務學習或社區服務的總時數；系統會使用共用基本資料的全校學生人數計算。" value={input.serviceHours} onChange={(v) => set("serviceHours", v)} suffix="小時" /></div></SectionCard>
+      </div>
+      <SubmissionActions section="social" data={{ input }} />
+      <div className="mt-6 flex justify-end"><button onClick={() => setLocation("/governance")} className="inline-flex items-center gap-2 bg-[#9A3E35] px-4 py-2.5 text-xs font-bold text-white transition hover:-translate-y-0.5 hover:bg-[#7A2F28] active:scale-[.97]">下一章<ChevronRight className="h-4 w-4" /></button></div>
+    </EsgLayout>
+  );
+}
